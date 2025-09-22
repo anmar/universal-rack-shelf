@@ -78,13 +78,19 @@ shelf_screw_5 = [10, 10, 3, 8]; // [0:0.1:1000]
 // Amount of right side keystone holes
 keystone_right_count = 0;
 // Shape of keystone hole
-keystone_right_format = "square"; // ["square", "circle", "hex"]
+keystone_right_format = "socket"; // ["square", "circle", "hex", "socket"]
 // Position of right side keystone holes
 keystone_right_position = "edge"; // ["shelf", "edge"]
 // Width of right side keystone holes
-keystone_right_width = 14.7;
+keystone_right_width = 15.2;
+// Extra Width of right side keystone sockets
+keystone_right_width_socket = 4.0;
 // Height of right side square keystone holes (ignored for circle/hex)
-keystone_right_height = 19.6;
+keystone_right_height = 16.7;
+// Extra Height of right side keystone sockets (ignored for square/circle/hex)
+keystone_right_height_socket = 5.0;
+// Depth of right side square keystone sockets (ignored for square/circle/hex)
+keystone_right_depth = 9.8;
 // Spacing between right side keystone holes
 keystone_right_spacing = 10;
 // width of indent around right side keystone holes
@@ -96,13 +102,19 @@ keystone_right_indent_thickness = 1.5;
 // Amount of left side keystone holes
 keystone_left_count = 0;
 // Shape of keystone hole
-keystone_left_format = "circle"; // ["square", "circle", "hex"]
+keystone_left_format = "circle"; // ["square", "circle", "hex", "socket"]
 // Position of left side keystone holes
 keystone_left_position = "shelf"; // ["shelf", "edge"]
 // Width of left side keystone holes
 keystone_left_width = 8;
+// Extra Width of left side keystone sockets (ignored for square/circle/hex)
+keystone_left_width_socket = 4.0;
 // Height of left side square keystone holes (ignored for circle/hex)
 keystone_left_height = 8;
+// Extra Height of left side keystone sockets (ignored for square/circle/hex)
+keystone_left_height_socket = 5.0;
+// Depth of right side square keystone sockets (ignored for square/circle/hex)
+keystone_left_depth = 9.8;
 // Spacing between left side keystone holes
 keystone_left_spacing = 5;
 // width of indent around left side keystone holes
@@ -165,17 +177,20 @@ module rsquare(size=[10, 10], radius=2, center=false, $fn=100) {
     }
 }
 
-module keystone(a) {
+module keystone(a, m) {
     center_offset = a == "left" ? (rack_width + shelf_size.x + keystone_left_width)/2 + shelf_thickness + keystone_left_spacing : rack_width / 2 - shelf_size.x / 2 - keystone_right_width / 2 - keystone_right_spacing;
     edge_offset = a == "left" ? rack_width - rail_overlap - keystone_left_width/2 - keystone_left_spacing/2 : rail_overlap + keystone_right_width/2 + keystone_right_spacing/2;
     position = a == "left" ? keystone_left_position : keystone_right_position;
     base_offset = position == "edge" ? edge_offset : center_offset;
-    i_base_offset = a == "left" ? keystone_left_width + keystone_left_spacing : keystone_right_width + keystone_right_spacing;
+    i_base_offset = a == "left" ? keystone_left_width + keystone_left_spacing + keystone_left_width_socket*2 : keystone_right_width + keystone_right_spacing + keystone_right_width_socket*2;
     i_offset = a == "left" ? (position == "edge" ? i_base_offset * -1 : i_base_offset) : (position == "edge" ? i_base_offset : i_base_offset * -1);
     count = a == "left" ? keystone_left_count : keystone_right_count;
     format = a == "left" ? keystone_left_format : keystone_right_format;
     width = a == "left" ? keystone_left_width : keystone_right_width;
+    width_socket = a == "left" ? keystone_left_width_socket : keystone_right_width_socket;
     height = a == "left" ? keystone_left_height : keystone_right_height;
+    height_socket = a == "left" ? keystone_left_height_socket : keystone_right_height_socket;
+    depth = a == "left" ? keystone_left_depth : keystone_right_depth;
     padding = a == "left" ? keystone_left_indent_width : keystone_right_indent_width;
     thickness = a == "left" ? keystone_left_indent_thickness : keystone_right_indent_thickness;
     if (count > 0) {
@@ -183,31 +198,61 @@ module keystone(a) {
             x_offset = base_offset + i * i_offset;
             translate([x_offset, rack_height / 2, thickness]) {
                 if(format == "square") {
-                    color("red") cube([width, height, front_plate_thickness*2], center=true);
-                    if(padding > 0) {
-                        translate([0, 0, front_plate_thickness/2]) {
-                            color("blue") cube([width + padding*2, height + padding*2, front_plate_thickness], center=true);
+                    if ( m == "hole" ) {
+                        color("red") cube([width, height, front_plate_thickness*2], center=true);
+                        if(padding > 0) {
+                            translate([0, 0, front_plate_thickness/2]) {
+                                color("blue") cube([width + padding*2, height + padding*2, front_plate_thickness], center=true);
+                            }
                         }
                     }
                 }
                 if(format == "circle") {
-                    color("red") cylinder(front_plate_thickness*2, d=width, center=true, $fn=200);
-                    if(padding > 0) {
-                        translate([0, 0, front_plate_thickness/2]) {
-                            color("blue") cylinder(front_plate_thickness, d=width + padding*2, center=true, $fn=200);
+                    if ( m == "hole" ) {
+                        color("red") cylinder(front_plate_thickness*2, d=width, center=true, $fn=200);
+                        if(padding > 0) {
+                            translate([0, 0, front_plate_thickness/2]) {
+                                color("blue") cylinder(front_plate_thickness, d=width + padding*2, center=true, $fn=200);
+                            }
                         }
                     }
                 }
                 if(format == "hex") {
-                    rotate(90) color("red") cylinder(front_plate_thickness*2, d=width, center=true, $fn=6);
-                    if(padding > 0) {
-                        translate([0, 0, front_plate_thickness/2]) {
-                            rotate(90) color("blue") cylinder(front_plate_thickness, d=width + padding*2, center=true, $fn=6);
+                    if ( m == "hole" ) {
+                        rotate(90) color("red") cylinder(front_plate_thickness*2, d=width, center=true, $fn=6);
+                        if(padding > 0) {
+                            translate([0, 0, front_plate_thickness/2]) {
+                                rotate(90) color("blue") cylinder(front_plate_thickness, d=width + padding*2, center=true, $fn=6);
+                            }
                         }
+                    }
+                }
+                if(format == "socket") {
+                    if ( m == "hole" ) {
+                        translate([0,0,-thickness]) color("red") cube([width+(width_socket*2), height+(height_socket*2), front_plate_thickness*2+depth], center=true);
+                    }
+                    if ( m == "socket" ) {
+                        translate([0,0,-thickness]) keystone_socket(keystone_width=width, keystone_height=height, keystone_depth=depth, keystone_width_socket=width_socket, keystone_height_socket=height_socket);
                     }
                 }
             }
         }
+    }
+}
+module keystone_socket(keystone_width, keystone_height, keystone_depth, keystone_width_socket, keystone_height_socket) {
+    keystone_height_offset = 1.0;
+    translate([-keystone_width/2-keystone_width_socket,-keystone_height/2-keystone_height_socket,0]) difference() {
+        // body
+        color("blue") cube([keystone_width+(keystone_width_socket*2), keystone_height+(keystone_height_socket*2), keystone_depth], center=false);
+        translate([keystone_width_socket,keystone_height_socket-keystone_height_offset, -0.02]) cube([keystone_width, keystone_height, keystone_depth+0.04], center=false);
+        // top
+        translate([keystone_width_socket, keystone_height+keystone_height_socket-keystone_height_offset-0.01, 3.0]) cube([keystone_width, 4.0, 5.2], center=false);
+        translate([keystone_width_socket, keystone_height+keystone_height_socket-keystone_height_offset-0.01, 1.02+0.01]) rotate([90,0,0]) rotate([0,90,0]) color("red") linear_extrude(keystone_width) polygon([[0,0],[1.98,1.98],[0,1.98],[0,0]]);
+        translate([keystone_width_socket, keystone_height+keystone_height_socket-keystone_height_offset-0.01, 3.0+1.6+0.01]) cube([keystone_width, 3.0+0.01, 5.2], center=false);
+        translate([keystone_width_socket, keystone_height+keystone_height_socket-keystone_height_offset+3.0+1.08-0.01, keystone_depth-1.08-0.52-0.01]) rotate([180,0,0]) rotate([0,90,0]) color("red") linear_extrude(keystone_width) polygon([[0,0],[1.08,1.08],[0,1.08],[0,0]]);
+        // bottom
+        translate([keystone_width_socket, keystone_height_socket-keystone_height_offset-2.0+0.01, 3.0]) cube([keystone_width, 2.0, 5.2], center=false);
+        translate([keystone_width_socket,keystone_height_socket-keystone_height_offset+0.01,keystone_depth-0.5-0.01]) rotate([90,0,0]) rotate([0,90,0]) color("red") linear_extrude(keystone_width) polygon([[0,0],[-1.8,-1.8],[0,-1.8],[0,0]]);
     }
 }
 
@@ -256,7 +301,7 @@ difference() {
             }
             // Keystone / cable holes
             for (a = ["left", "right"]) {
-                keystone(a);
+                keystone(a, "hole");
             }
         }
         translate([0, 0, front_plate_thickness]) {
@@ -349,6 +394,10 @@ difference() {
                     }
                 }
             }
+        }
+        // Keystone / cable holes
+        for (a = ["left", "right"]) {
+            keystone(a, "socket");
         }
     }
     // Notch
