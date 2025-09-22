@@ -165,6 +165,52 @@ module rsquare(size=[10, 10], radius=2, center=false, $fn=100) {
     }
 }
 
+module keystone(a) {
+    center_offset = a == "left" ? (rack_width + shelf_size.x + keystone_left_width)/2 + shelf_thickness + keystone_left_spacing : rack_width / 2 - shelf_size.x / 2 - keystone_right_width / 2 - keystone_right_spacing;
+    edge_offset = a == "left" ? rack_width - rail_overlap - keystone_left_width/2 - keystone_left_spacing/2 : rail_overlap + keystone_right_width/2 + keystone_right_spacing/2;
+    position = a == "left" ? keystone_left_position : keystone_right_position;
+    base_offset = position == "edge" ? edge_offset : center_offset;
+    i_base_offset = a == "left" ? keystone_left_width + keystone_left_spacing : keystone_right_width + keystone_right_spacing;
+    i_offset = a == "left" ? (position == "edge" ? i_base_offset * -1 : i_base_offset) : (position == "edge" ? i_base_offset : i_base_offset * -1);
+    count = a == "left" ? keystone_left_count : keystone_right_count;
+    format = a == "left" ? keystone_left_format : keystone_right_format;
+    width = a == "left" ? keystone_left_width : keystone_right_width;
+    height = a == "left" ? keystone_left_height : keystone_right_height;
+    padding = a == "left" ? keystone_left_indent_width : keystone_right_indent_width;
+    thickness = a == "left" ? keystone_left_indent_thickness : keystone_right_indent_thickness;
+    if (count > 0) {
+        for (i = [0 : count - 1]) {
+            x_offset = base_offset + i * i_offset;
+            translate([x_offset, rack_height / 2, thickness]) {
+                if(format == "square") {
+                    color("red") cube([width, height, front_plate_thickness*2], center=true);
+                    if(padding > 0) {
+                        translate([0, 0, front_plate_thickness/2]) {
+                            color("blue") cube([width + padding*2, height + padding*2, front_plate_thickness], center=true);
+                        }
+                    }
+                }
+                if(format == "circle") {
+                    color("red") cylinder(front_plate_thickness*2, d=width, center=true, $fn=200);
+                    if(padding > 0) {
+                        translate([0, 0, front_plate_thickness/2]) {
+                            color("blue") cylinder(front_plate_thickness, d=width + padding*2, center=true, $fn=200);
+                        }
+                    }
+                }
+                if(format == "hex") {
+                    rotate(90) color("red") cylinder(front_plate_thickness*2, d=width, center=true, $fn=6);
+                    if(padding > 0) {
+                        translate([0, 0, front_plate_thickness/2]) {
+                            rotate(90) color("blue") cylinder(front_plate_thickness, d=width + padding*2, center=true, $fn=6);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 difference() {
     union() {
         // Baseplate and holes
@@ -210,49 +256,7 @@ difference() {
             }
             // Keystone / cable holes
             for (a = ["left", "right"]) {
-                center_offset = a == "left" ? (rack_width + shelf_size.x + keystone_left_width)/2 + shelf_thickness + keystone_left_spacing : rack_width / 2 - shelf_size.x / 2 - keystone_right_width / 2 - keystone_right_spacing;
-                edge_offset = a == "left" ? rack_width - rail_overlap - keystone_left_width/2 - keystone_left_spacing/2 : rail_overlap + keystone_right_width/2 + keystone_right_spacing/2;
-                position = a == "left" ? keystone_left_position : keystone_right_position;
-                base_offset = position == "edge" ? edge_offset : center_offset;
-                i_base_offset = a == "left" ? keystone_left_width + keystone_left_spacing : keystone_right_width + keystone_right_spacing;
-                i_offset = a == "left" ? (position == "edge" ? i_base_offset * -1 : i_base_offset) : (position == "edge" ? i_base_offset : i_base_offset * -1);
-                count = a == "left" ? keystone_left_count : keystone_right_count;
-                format = a == "left" ? keystone_left_format : keystone_right_format;
-                width = a == "left" ? keystone_left_width : keystone_right_width;
-                height = a == "left" ? keystone_left_height : keystone_right_height;
-                padding = a == "left" ? keystone_left_indent_width : keystone_right_indent_width;
-                thickness = a == "left" ? keystone_left_indent_thickness : keystone_right_indent_thickness;
-                if (count > 0) {
-                    for (i = [0 : count - 1]) {
-                        x_offset = base_offset + i * i_offset;
-                        translate([x_offset, rack_height / 2, thickness]) {
-                            if(format == "square") {
-                                color("red") cube([width, height, front_plate_thickness*2], center=true);
-                                if(padding > 0) {
-                                    translate([0, 0, front_plate_thickness/2]) {
-                                        color("blue") cube([width + padding*2, height + padding*2, front_plate_thickness], center=true);
-                                    }
-                                }
-                            }
-                            if(format == "circle") {
-                                color("red") cylinder(front_plate_thickness*2, d=width, center=true, $fn=200);
-                                if(padding > 0) {
-                                    translate([0, 0, front_plate_thickness/2]) {
-                                        color("blue") cylinder(front_plate_thickness, d=width + padding*2, center=true, $fn=200);
-                                    }
-                                }
-                            }
-                            if(format == "hex") {
-                                rotate(90) color("red") cylinder(front_plate_thickness*2, d=width, center=true, $fn=6);
-                                if(padding > 0) {
-                                    translate([0, 0, front_plate_thickness/2]) {
-                                        rotate(90) color("blue") cylinder(front_plate_thickness, d=width + padding*2, center=true, $fn=6);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                keystone(a);
             }
         }
         translate([0, 0, front_plate_thickness]) {
